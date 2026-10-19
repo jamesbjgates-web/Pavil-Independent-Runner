@@ -18,7 +18,7 @@ def report(status="PASSED", execution=EXECUTION):
     return json.dumps({"job_id": JOB, "execution_id": execution,
                        "suite_sha256": SUITE,
                        "artifact_sha256": digest(ARTIFACT),
-                       "status": status}).encode()
+                       "status": status, "tests": [{"name": "synthetic-pin", "status": "PASSED"}]}).encode()
 
 
 class SubmissionTests(unittest.TestCase):
