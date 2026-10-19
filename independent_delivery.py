@@ -40,7 +40,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def retrieve(kind, job_id, execution_id, sha256, secret, *, opener=None):
+def retrieve(kind, job_id, execution_id, sha256, secret, *, opener=None, include_artifact_pin=False):
     if kind not in ("suite", "artifact") or not isinstance(job_id, str) or not _HEX32.fullmatch(job_id):
         raise ValueError("invalid delivery selector")
     path = "/v1/independent-runner/{}/{}".format(kind, job_id)
@@ -70,4 +70,11 @@ def retrieve(kind, job_id, execution_id, sha256, secret, *, opener=None):
     payload = base64.b64decode(encoded, validate=True)
     if not payload or len(payload) > 2_097_152 or hashlib.sha256(payload).hexdigest() != sha256:
         raise ValueError("delivery checksum mismatch")
+    if include_artifact_pin:
+        if kind != "suite":
+            raise ValueError("artifact pin discovery requires approved suite")
+        artifact_pin = result.get("artifact_sha256")
+        if not isinstance(artifact_pin, str) or not _HEX64.fullmatch(artifact_pin):
+            raise ValueError("receipt artifact pin missing or invalid")
+        return payload, artifact_pin
     return payload
