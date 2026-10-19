@@ -1,0 +1,52 @@
+"""Fail-closed independent runner submission contract. No I/O."""
+import base64
+import json
+import secrets
+import time
+from runner_contract import digest, sign_evidence, sign_transport
+
+
+def build_submission(job_id, execution_id, manifest_pin, suite_pin,
+                     artifact, report, evidence_key, transport_key):
+    if not artifact or len(artifact) > 10485760:
+        raise ValueError("invalid artifact")
+    if not report or len(report) > 1048576:
+        raise ValueError("invalid test report")
+    data = json.loads(report)
+    if not isinstance(data, dict):
+        raise ValueError("invalid test report")
+    if (data.get("job_id") != job_id or
+            data.get("execution_id") != execution_id or
+            data.get("suite_sha256") != suite_pin or
+            data.get("artifact_sha256") != digest(artifact) or
+            data.get("status") != "PASSED"):
+        raise ValueError("test report binding failed")
+    evidence = {
+        "verifier": "controller-independent-runner",
+        "job_id": job_id,
+        "manifest_sha256": manifest_pin,
+        "suite_sha256": suite_pin,
+        "artifact_sha256": digest(artifact),
+        "test_run_sha256": digest(report),
+        "status": "PASSED",
+        "issued_epoch": int(time.time()),
+        "nonce": secrets.token_hex(16),
+    }
+    evidence["hmac_sha256"] = sign_evidence(evidence, evidence_key)
+    request = {
+        "job_id": job_id,
+        "execution_id": execution_id,
+        "evidence": evidence,
+        "artifact_base64": base64.b64encode(artifact).decode(),
+        "test_report_base64": base64.b64encode(report).decode(),
+    }
+    body = json.dumps(request, separators=(",", ":")).encode()
+    stamp = int(time.time())
+    nonce = secrets.token_hex(16)
+    headers = {
+        "Content-Type": "application/json",
+        "X-Pavil-Timestamp": str(stamp),
+        "X-Pavil-Nonce": nonce,
+        "X-Pavil-Signature": sign_transport(body, transport_key, stamp, nonce),
+    }
+    return body, headers
