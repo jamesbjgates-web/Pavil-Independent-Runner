@@ -20,6 +20,10 @@ class CoverageTests(unittest.TestCase):
     def test_exact_coverage(self):
         self.assertTrue(check_report_coverage(SUITE, encoded(REPORT)))
 
+    def test_string_named_approved_suite(self):
+        suite = encoded({"tests": ["alpha", "beta"]})
+        self.assertTrue(check_report_coverage(suite, encoded(REPORT)))
+
     def test_missing_case(self):
         data = dict(REPORT, tests=REPORT["tests"][:1])
         with self.assertRaises(ValueError):
