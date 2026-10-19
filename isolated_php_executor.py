@@ -37,7 +37,22 @@ def execute(job_id, execution_id, suite_pin, artifact, suite):
         elif b"parse error" in diagnostic or b"syntax error" in diagnostic:
             reason = "PHP_PARSE_ERROR"
         elif b"fatal error" in diagnostic or b"uncaught" in diagnostic:
-            reason = "PHP_FATAL_ERROR"
+            if b"failed opening required" in diagnostic or b"failed to open stream" in diagnostic:
+                reason = "PHP_FATAL_INCLUDE"
+            elif b"undefined function" in diagnostic:
+                reason = "PHP_FATAL_UNDEFINED_FUNCTION"
+            elif b"undefined constant" in diagnostic:
+                reason = "PHP_FATAL_UNDEFINED_CONSTANT"
+            elif b"call to a member function" in diagnostic:
+                reason = "PHP_FATAL_METHOD_CALL"
+            elif b"cannot redeclare" in diagnostic:
+                reason = "PHP_FATAL_REDECLARATION"
+            elif b"assertion" in diagnostic or b"runtimeexception" in diagnostic:
+                reason = "PHP_FATAL_ASSERTION"
+            elif b"failed to open" in diagnostic or b"no such file" in diagnostic:
+                reason = "PHP_FATAL_FILE_ACCESS"
+            else:
+                reason = "PHP_FATAL_OTHER"
         elif b"failed to open stream" in diagnostic or b"no such file" in diagnostic:
             reason = "PHP_MISSING_FILE"
         elif b"pass" in diagnostic or b"fail" in diagnostic:
