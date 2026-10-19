@@ -13,8 +13,11 @@ def main():
     delivery=key("PAVIL_DELIVERY_SECRET")
     transport=key("PAVIL_TRANSPORT_SECRET")
     evidence=key("PAVIL_EVIDENCE_SECRET")
+    print("HISTORICAL_STAGE: suite_delivery",flush=True)
     suite=fetch("suite",delivery)
+    print("HISTORICAL_STAGE: artifact_delivery",flush=True)
     artifact=fetch("artifact",delivery)
+    print("HISTORICAL_STAGE: isolated_php",flush=True)
     with tempfile.TemporaryDirectory(prefix="pavil-historical-") as directory:
         root=Path(directory)
         incoming=root/"in"; outgoing=root/"out"
@@ -34,7 +37,9 @@ def main():
         result=subprocess.run(cmd,capture_output=True,timeout=100,check=False)
         if result.returncode:raise ValueError("HISTORICAL_ISOLATED_SUITE_FAILED")
         report=(outgoing/"report.json").read_bytes()
+    print("HISTORICAL_STAGE: report_validation",flush=True)
     signed=sign_verified_historical(artifact,suite,report,evidence)
+    print("HISTORICAL_STAGE: authenticated_submission",flush=True)
     data={"job_id":HISTORICAL_JOB,"recovery_kind":"historical_provenance_v1",
           "evidence":signed,"artifact_base64":base64.b64encode(artifact).decode(),
           "test_report_base64":base64.b64encode(report).decode()}
@@ -63,5 +68,8 @@ if __name__=="__main__":
         print("HISTORICAL_GATE_HTTP_FAILED:",exc.code,"reason:",reason,"endpoint:",exc.url.split("/v1/")[-1].split("?")[0],file=sys.stderr)
         raise SystemExit(1)
     except Exception as exc:
-        print("HISTORICAL_GATE_FAILED:",type(exc).__name__,file=sys.stderr)
+        reason=str(exc)
+        if not isinstance(exc,ValueError) or not (reason.startswith("HISTORICAL_") or reason in ("historical report binding invalid","historical approved suite not passed","historical test coverage invalid","historical report invalid","historical report missing or oversized","historical artifact pin mismatch","historical suite pin mismatch")):
+            reason="UNCLASSIFIED"
+        print("HISTORICAL_GATE_FAILED:",type(exc).__name__,"reason:",reason,file=sys.stderr)
         raise SystemExit(1)
