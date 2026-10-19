@@ -31,7 +31,20 @@ def execute(job_id, execution_id, suite_pin, artifact, suite):
             cwd=directory, capture_output=True, timeout=45, check=False,
         )
     if result.returncode != 0:
-        raise ValueError("APPROVED_PHP_SUITE_FAILED")
+        diagnostic = (result.stderr + b"\n" + result.stdout).lower()
+        if b"permission denied" in diagnostic:
+            reason = "PHP_PERMISSION_DENIED"
+        elif b"parse error" in diagnostic or b"syntax error" in diagnostic:
+            reason = "PHP_PARSE_ERROR"
+        elif b"fatal error" in diagnostic or b"uncaught" in diagnostic:
+            reason = "PHP_FATAL_ERROR"
+        elif b"failed to open stream" in diagnostic or b"no such file" in diagnostic:
+            reason = "PHP_MISSING_FILE"
+        elif b"pass" in diagnostic or b"fail" in diagnostic:
+            reason = "PHP_ASSERTION_FAILED"
+        else:
+            reason = "PHP_NONZERO_EXIT"
+        raise ValueError("APPROVED_PHP_SUITE_FAILED:" + reason)
     report = {"job_id": job_id, "execution_id": execution_id,
               "suite_sha256": suite_pin, "artifact_sha256": digest(artifact),
               "status": "PASSED", "tests": [
