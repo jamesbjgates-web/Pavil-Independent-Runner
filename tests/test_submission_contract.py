@@ -9,7 +9,8 @@ from submission_contract import build_submission
 KEY = b"x" * 32
 JOB = "a" * 32
 EXECUTION = "b" * 32
-SUITE = "c" * 64
+APPROVED_SUITE = json.dumps({"tests": ["synthetic-pin"]}).encode()
+SUITE = digest(APPROVED_SUITE)
 MANIFEST = "d" * 64
 ARTIFACT = b"synthetic-artifact"
 
@@ -24,7 +25,7 @@ def report(status="PASSED", execution=EXECUTION):
 class SubmissionTests(unittest.TestCase):
     def submit(self, value):
         return build_submission(JOB, EXECUTION, MANIFEST, SUITE,
-                                ARTIFACT, value, KEY, KEY)
+                                ARTIFACT, value, KEY, KEY, approved_suite=APPROVED_SUITE)
 
     def test_submission_binds_execution(self):
         body, headers = self.submit(report())
@@ -56,6 +57,17 @@ class SubmissionTests(unittest.TestCase):
         data["tests"].append(dict(data["tests"][0]))
         with self.assertRaises(ValueError):
             self.submit(json.dumps(data).encode())
+
+    def test_unapproved_test_denied(self):
+        data = json.loads(report())
+        data["tests"][0]["name"] = "unapproved"
+        with self.assertRaises(ValueError):
+            self.submit(json.dumps(data).encode())
+
+    def test_missing_approved_suite_denied(self):
+        with self.assertRaises(ValueError):
+            build_submission(JOB, EXECUTION, MANIFEST, SUITE,
+                             ARTIFACT, report(), KEY, KEY, approved_suite=b"{}")
 
     def test_wrong_execution_denied(self):
         with self.assertRaises(ValueError):
