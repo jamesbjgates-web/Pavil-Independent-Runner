@@ -26,7 +26,7 @@ def main():
     transport = required("PAVIL_TRANSPORT_SECRET").encode()
     if min(map(len, (delivery, evidence, transport))) < 32:
         raise ValueError("private runner credentials unavailable")
-    pair = retrieve_approved_pair(job, execution, suite_pin, delivery)
+    pair = guarded("CONFIDENTIAL_DELIVERY", retrieve_approved_pair, job, execution, suite_pin, delivery)
     with tempfile.TemporaryDirectory(prefix="pavil-gate-") as directory:
         root = Path(directory)
         incoming = root / "in"
@@ -53,25 +53,41 @@ def main():
         outgoing.chmod(0o777)
         for item in incoming.iterdir():
             item.chmod(0o444)
-        result = subprocess.run(cmd, capture_output=True, timeout=100, check=False)
+        result = guarded("ISOLATED_EXECUTION", subprocess.run, cmd, capture_output=True, timeout=100, check=False)
         if result.returncode:
-            raise ValueError("ISOLATED_ACCEPTANCE_FAILED")
-        report = (outgoing / "report.json").read_bytes()
-        body, headers = build_submission(job, execution, manifest, suite_pin,
+            raise GateFailure("ISOLATED_ACCEPTANCE", "NONZERO_EXIT")
+        report = guarded("REPORT_RETRIEVAL", (outgoing / "report.json").read_bytes)
+        body, headers = guarded("EVIDENCE_CONSTRUCTION", build_submission, job, execution, manifest, suite_pin,
                                          pair["artifact"], report, evidence,
                                          transport, approved_suite=pair["suite"])
         request = urllib.request.Request(
             "https://controller.pspt.ltd/v1/independent-runner/submit",
             data=body, headers=headers, method="POST")
-        with urllib.request.urlopen(request, timeout=30) as response:
-            answer = json.load(response)
+        with guarded("EVIDENCE_SUBMISSION", urllib.request.urlopen, request, timeout=30) as response:
+            answer = guarded("EVIDENCE_RESPONSE", json.load, response)
         if not isinstance(answer, dict) or answer.get("ok") is not True:
-            raise ValueError("CONTROLLER_DID_NOT_ACCEPT_VERIFICATION")
+            raise GateFailure("EVIDENCE_RESPONSE", "NOT_ACCEPTED")
         print("CONTROLLER_VERIFICATION_ACCEPTED", job)
+
+class GateFailure(Exception):
+    def __init__(self, stage, code):
+        self.stage = stage
+        self.code = code
+        super().__init__("verification failed")
+
+
+def guarded(stage, fn, *args, **kwargs):
+    try:
+        return fn(*args, **kwargs)
+    except Exception as exc:
+        raise GateFailure(stage, type(exc).__name__) from None
+
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
-        print("INDEPENDENT_VERIFICATION_FAILED:", type(exc).__name__, file=sys.stderr)
+        stage = exc.stage if isinstance(exc, GateFailure) else "INPUT_VALIDATION"
+        code = exc.code if isinstance(exc, GateFailure) else type(exc).__name__
+        print("INDEPENDENT_VERIFICATION_FAILED:", stage, code, file=sys.stderr)
         raise SystemExit(1)
