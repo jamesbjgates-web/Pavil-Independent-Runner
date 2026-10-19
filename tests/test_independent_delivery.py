@@ -55,6 +55,23 @@ class DeliveryTests(unittest.TestCase):
             retrieve("suite", self.job, self.execution, self.pin,
                      self.secret, opener=redirected)
 
+    def test_default_transport_installs_no_redirect_handler(self):
+        from unittest.mock import patch
+        from independent_delivery import _NoRedirect
+        handlers = []
+        def build_opener(*args):
+            handlers.extend(args)
+            class StubOpener:
+                def open(self, request, timeout):
+                    raise ValueError("stopped before network")
+            return StubOpener()
+        with patch("independent_delivery.urllib.request.build_opener", side_effect=build_opener):
+            with self.assertRaisesRegex(ValueError, "stopped before network"):
+                retrieve("suite", self.job, self.execution, self.pin, self.secret)
+        self.assertEqual(len(handlers), 1)
+        self.assertIsInstance(handlers[0], _NoRedirect)
+        self.assertIsNone(handlers[0].redirect_request(None, None, 302, "", {}, "https://elsewhere.invalid"))
+
     def test_checksum_rejected(self):
         body = json.dumps({"ok": True, "job_id": self.job,
                            "execution_id": self.execution,
