@@ -9,7 +9,7 @@ from submission_contract import build_submission
 KEY = b"x" * 32
 JOB = "a" * 32
 EXECUTION = "b" * 32
-APPROVED_SUITE = json.dumps({"tests": ["synthetic-pin"]}).encode()
+APPROVED_SUITE = b"<?php // synthetic approved suite"
 SUITE = digest(APPROVED_SUITE)
 MANIFEST = "d" * 64
 ARTIFACT = b"synthetic-artifact"
@@ -19,7 +19,7 @@ def report(status="PASSED", execution=EXECUTION):
     return json.dumps({"job_id": JOB, "execution_id": execution,
                        "suite_sha256": SUITE,
                        "artifact_sha256": digest(ARTIFACT),
-                       "status": status, "tests": [{"name": "synthetic-pin", "status": "PASSED"}]}).encode()
+                       "status": status, "tests": [{"name": "approved_php_suite", "status": "PASSED", "exit_code": 0, "executor": "isolated-php-cli"}]}).encode()
 
 
 class SubmissionTests(unittest.TestCase):
