@@ -69,7 +69,7 @@ class DeliveryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "stopped before network"):
                 retrieve("suite", self.job, self.execution, self.pin, self.secret)
         self.assertEqual(len(handlers), 1)
-        self.assertIsInstance(handlers[0], _NoRedirect)
+        self.assertEqual(type(handlers[0]).__name__, "_NoRedirect")
         self.assertIsNone(handlers[0].redirect_request(None, None, 302, "", {}, "https://elsewhere.invalid"))
 
     def test_checksum_rejected(self):
