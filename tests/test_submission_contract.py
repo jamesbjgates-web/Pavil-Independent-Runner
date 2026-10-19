@@ -30,7 +30,8 @@ class SubmissionTests(unittest.TestCase):
         body, headers = self.submit(report())
         parsed = json.loads(body)
         self.assertEqual(parsed["execution_id"], EXECUTION)
-        self.assertEqual(parsed["evidence"]["job_id"], JOB)\n        self.assertEqual(parsed["evidence"]["execution_id"], EXECUTION)
+        self.assertEqual(parsed["evidence"]["job_id"], JOB)
+        self.assertEqual(parsed["evidence"]["execution_id"], EXECUTION)
         self.assertEqual(len(parsed["evidence"]["hmac_sha256"]), 64)
         self.assertEqual(len(headers["X-Pavil-Signature"]), 64)
 
