@@ -10,7 +10,7 @@ if hashlib.sha256(artifact).hexdigest()!=HISTORICAL_ARTIFACT or hashlib.sha256(s
 # The executor's temporary execution ID is a local sandbox test-run identifier,
 # not an original Dell execution ID; it is deliberately excluded from the report.
 try:
-    local=execute(HISTORICAL_JOB,"0"*32,HISTORICAL_SUITE,artifact,suite)
+    local=execute(HISTORICAL_JOB,"0"*32,HISTORICAL_SUITE,artifact,suite,layout="dispatcher_contract")
 except ValueError as exc:
     value=str(exc)
     if value.startswith("APPROVED_PHP_SUITE_FAILED:"):
