@@ -16,9 +16,9 @@ def approved_names(suite_bytes):
         raise ValueError("invalid approved test count")
     names = set()
     for test in tests:
-        if not isinstance(test, dict) or not isinstance(test.get("name"), str):
+        name = test if isinstance(test, str) else test.get("name") if isinstance(test, dict) else None
+        if not isinstance(name, str):
             raise ValueError("invalid approved test")
-        name = test["name"]
         if not name or len(name) > 256 or name in names:
             raise ValueError("duplicate or invalid approved test name")
         names.add(name)
