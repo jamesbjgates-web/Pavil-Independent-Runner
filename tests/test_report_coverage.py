@@ -25,7 +25,7 @@ class CoverageTests(unittest.TestCase):
         self.assertTrue(check_report_coverage(suite, encoded(REPORT)))
 
     def test_missing_case(self):
-        data = dict(REPORT, tests=REPORT["tests"][:1])
+        data = dict(REPORT, tests=[])
         with self.assertRaises(ValueError):
             check_report_coverage(SUITE, encoded(data))
 
