@@ -1,0 +1,25 @@
+name: Independent Runner Preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pavil-independent-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Isolated runner self-tests (no Pavil data)
+        run: python3 -I -m unittest discover -s tests -v
+      - name: Confirm production attestation is disabled
+        run: |
+          echo "SELF_TEST_ONLY: no Controller submission, no VERIFIED event"
