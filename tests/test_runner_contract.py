@@ -1,6 +1,9 @@
 import hashlib
 import hmac
 import unittest
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from runner_contract import digest, sign_evidence, sign_transport
 
 KEY = b"k" * 32
