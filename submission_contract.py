@@ -47,8 +47,9 @@ def build_submission(job_id, execution_id, manifest_pin, suite_pin,
     }
     # Controller submission requires this additional execution binding.
     # The signed report digest commits to the same execution ID.
+    evidence_signature = sign_evidence(evidence, evidence_key)
     evidence["execution_id"] = execution_id
-    evidence["hmac_sha256"] = sign_evidence(evidence, evidence_key)
+    evidence["hmac_sha256"] = evidence_signature
     request = {
         "job_id": job_id,
         "execution_id": execution_id,
