@@ -35,7 +35,17 @@ def main():
              "--tmpfs","/tmp:rw,noexec,nosuid,size=16m",
              "pavil-php-verifier:local","python3","/runner/sandbox_historical.py"]
         result=subprocess.run(cmd,capture_output=True,timeout=100,check=False)
-        if result.returncode:raise ValueError("HISTORICAL_ISOLATED_SUITE_FAILED")
+        if result.returncode:
+            print("HISTORICAL_DOCKER_EXIT:",result.returncode,flush=True)
+            diagnostic=(result.stderr or b"").decode("utf-8","replace")
+            for line in diagnostic.splitlines():
+                if "PermissionError" in line or "Permission denied" in line:
+                    print("HISTORICAL_DOCKER_DIAGNOSTIC: PERMISSION_DENIED",flush=True)
+                elif "APPROVED_PHP_SUITE_FAILED" in line:
+                    print("HISTORICAL_DOCKER_DIAGNOSTIC: PHP_SUITE_FAILED",flush=True)
+                elif "FileNotFoundError" in line:
+                    print("HISTORICAL_DOCKER_DIAGNOSTIC: FILE_NOT_FOUND",flush=True)
+            raise ValueError("HISTORICAL_ISOLATED_SUITE_FAILED")
         report=(outgoing/"report.json").read_bytes()
     print("HISTORICAL_STAGE: report_validation",flush=True)
     signed=sign_verified_historical(artifact,suite,report,evidence)
