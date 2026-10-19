@@ -4,14 +4,19 @@ import json
 import secrets
 import time
 from runner_contract import digest, sign_evidence, sign_transport
+from report_coverage import check_report_coverage
 
 
 def build_submission(job_id, execution_id, manifest_pin, suite_pin,
-                     artifact, report, evidence_key, transport_key):
+                     artifact, report, evidence_key, transport_key, *, approved_suite):
     if not artifact or len(artifact) > 10485760:
         raise ValueError("invalid artifact")
     if not report or len(report) > 1048576:
         raise ValueError("invalid test report")
+    if digest(approved_suite) != suite_pin:
+        raise ValueError("approved suite pin mismatch")
+    if not check_report_coverage(approved_suite, report):
+        raise ValueError("approved suite coverage mismatch")
     data = json.loads(report)
     if not isinstance(data, dict):
         raise ValueError("invalid test report")
