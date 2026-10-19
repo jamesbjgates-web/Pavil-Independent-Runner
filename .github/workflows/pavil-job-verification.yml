@@ -50,4 +50,4 @@ jobs:
           PAVIL_DELIVERY_SECRET: ${{ secrets.PAVIL_DELIVERY_SECRET }}
           PAVIL_EVIDENCE_SECRET: ${{ secrets.PAVIL_EVIDENCE_SECRET }}
           PAVIL_TRANSPORT_SECRET: ${{ secrets.PAVIL_TRANSPORT_SECRET }}
-        run: python3 -I independent_gate.py
+        run: python3 independent_gate.py
