@@ -70,7 +70,7 @@ class DeliveryTests(unittest.TestCase):
                 retrieve("suite", self.job, self.execution, self.pin, self.secret)
         self.assertEqual(len(handlers), 1)
         self.assertEqual(handlers[0].__name__, "_NoRedirect")
-        self.assertIsNone(handlers[0].redirect_request(None, None, 302, "", {}, "https://elsewhere.invalid"))
+        self.assertIsNone(handlers[0]().redirect_request(None, None, 302, "", {}, "https://elsewhere.invalid"))
 
     def test_checksum_rejected(self):
         body = json.dumps({"ok": True, "job_id": self.job,
