@@ -10,7 +10,7 @@ def key(name):
     return value
 
 def main():
-    delivery=key("PAVIL_TRANSPORT_SECRET")
+    delivery=key("PAVIL_DELIVERY_SECRET")\n    transport=key("PAVIL_TRANSPORT_SECRET")
     evidence=key("PAVIL_EVIDENCE_SECRET")
     suite=fetch("suite",delivery)
     artifact=fetch("artifact",delivery)
@@ -40,7 +40,7 @@ def main():
     body=json.dumps(data,separators=(",",":")).encode()
     path="/v1/independent-runner/historical/submit"
     request=urllib.request.Request(ROOT+path,data=body,
-        headers={**headers("POST",path,body,delivery),"Content-Type":"application/json"},method="POST")
+        headers={**headers("POST",path,body,transport),"Content-Type":"application/json"},method="POST")
     with urllib.request.build_opener(NoRedirect).open(request,timeout=30) as response:
         if response.geturl()!=ROOT+path:raise ValueError("redirect denied")
         answer=json.load(response)
