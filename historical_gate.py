@@ -10,7 +10,8 @@ def key(name):
     return value
 
 def main():
-    delivery=key("PAVIL_DELIVERY_SECRET")\n    transport=key("PAVIL_TRANSPORT_SECRET")
+    delivery=key("PAVIL_DELIVERY_SECRET")
+    transport=key("PAVIL_TRANSPORT_SECRET")
     evidence=key("PAVIL_EVIDENCE_SECRET")
     suite=fetch("suite",delivery)
     artifact=fetch("artifact",delivery)
