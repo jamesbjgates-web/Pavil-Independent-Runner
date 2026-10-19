@@ -7,7 +7,7 @@ from pathlib import Path
 from report_coverage import approved_names, CASE_NAME
 from runner_contract import digest
 
-def execute(job_id, execution_id, suite_pin, artifact, suite):
+def execute(job_id, execution_id, suite_pin, artifact, suite, *, layout="flat"):
     approved_names(suite)
     if digest(suite) != suite_pin:
         raise ValueError("approved suite pin mismatch")
@@ -17,8 +17,17 @@ def execute(job_id, execution_id, suite_pin, artifact, suite):
         raise ValueError("candidate is not PHP")
     with tempfile.TemporaryDirectory(prefix="pavil-independent-") as directory:
         root = Path(directory)
-        source = root / "candidate.php"
-        test = root / "approved_suite.php"
+        if layout == "dispatcher_contract":
+            # Preserve the approved suite's original repository-relative path.
+            (root / "src" / "Core").mkdir(parents=True)
+            (root / "tests").mkdir()
+            source = root / "src" / "Core" / "PavilDesktopAutoDispatcher.php"
+            test = root / "tests" / "approved_suite.php"
+        elif layout == "flat":
+            source = root / "candidate.php"
+            test = root / "approved_suite.php"
+        else:
+            raise ValueError("invalid isolated suite layout")
         source.write_bytes(artifact)
         test.write_bytes(suite)
         os.chmod(source, 0o400)
