@@ -10,10 +10,10 @@ def encoded(value):
     return json.dumps(value).encode()
 
 
-SUITE = encoded({"tests": [{"name": "alpha"}, {"name": "beta"}]})
+SUITE = b"<?php // approved test fixture"
 REPORT = {"status": "PASSED", "tests": [
-    {"name": "alpha", "status": "PASSED"},
-    {"name": "beta", "status": "PASSED"}]}
+    {"name": "approved_php_suite", "status": "PASSED",
+     "exit_code": 0, "executor": "isolated-php-cli"}]}
 
 
 class CoverageTests(unittest.TestCase):
@@ -21,7 +21,7 @@ class CoverageTests(unittest.TestCase):
         self.assertTrue(check_report_coverage(SUITE, encoded(REPORT)))
 
     def test_string_named_approved_suite(self):
-        suite = encoded({"tests": ["alpha", "beta"]})
+        suite = b"<?php // alternate approved PHP fixture"
         self.assertTrue(check_report_coverage(suite, encoded(REPORT)))
 
     def test_missing_case(self):
@@ -42,7 +42,7 @@ class CoverageTests(unittest.TestCase):
 
     def test_failed_case(self):
         data = dict(REPORT, tests=[REPORT["tests"][0],
-                                   {"name": "beta", "status": "FAILED"}])
+                                   {"name": "approved_php_suite", "status": "FAILED"}])
         with self.assertRaises(ValueError):
             check_report_coverage(SUITE, encoded(data))
 
