@@ -1,0 +1,49 @@
+name: Pavil Job Verification Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Controller job ID (non-secret)"
+        required: true
+        type: string
+      execution_id:
+        description: "Dell execution ID (non-secret)"
+        required: true
+        type: string
+      manifest_sha256:
+        description: "Approved manifest pin"
+        required: true
+        type: string
+      suite_sha256:
+        description: "Approved suite pin"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pavil-job-gate-${{ inputs.job_id }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      JOB_ID: ${{ inputs.job_id }}
+      EXECUTION_ID: ${{ inputs.execution_id }}
+      MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
+      SUITE_SHA256: ${{ inputs.suite_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate immutable dispatch metadata
+        run: |
+          python3 -I -c 'import os,sys;sys.path.insert(0,os.getcwd());from dispatch_contract import validate_dispatch;validate_dispatch(os.environ["JOB_ID"],os.environ["EXECUTION_ID"],os.environ["MANIFEST_SHA256"],os.environ["SUITE_SHA256"])'
+      - name: Block attestation until confidential delivery and execution are commissioned
+        run: |
+          echo "INDEPENDENT_JOB_GATE_NOT_COMMISSIONED: no candidate fetched or tested"
+          exit 1
