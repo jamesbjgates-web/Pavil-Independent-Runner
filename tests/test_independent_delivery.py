@@ -5,7 +5,7 @@ import hmac
 import io
 import json
 import unittest
-from independent_delivery import retrieve, signed_get_headers
+from independent_delivery import retrieve, retrieve_approved_pair, signed_get_headers
 
 
 class FakeResponse:
@@ -71,6 +71,41 @@ class DeliveryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "artifact pin"):
             retrieve("suite", self.job, self.execution, self.pin,
                      self.secret, opener=open_ok, include_artifact_pin=True)
+
+    def test_approved_pair_uses_receipt_artifact_pin(self):
+        artifact = b"verified candidate bytes"
+        artifact_pin = hashlib.sha256(artifact).hexdigest()
+        seen = []
+        def open_pair(request, timeout):
+            seen.append(request.full_url)
+            kind = "suite" if "/suite/" in request.full_url else "artifact"
+            payload = self.bytes if kind == "suite" else artifact
+            body = {"ok": True, "job_id": self.job,
+                    "execution_id": self.execution,
+                    kind + "_sha256": self.pin if kind == "suite" else artifact_pin,
+                    kind + "_base64": base64.b64encode(payload).decode()}
+            if kind == "suite":
+                body["artifact_sha256"] = artifact_pin
+            return FakeResponse(request.full_url, json.dumps(body).encode())
+        pair = retrieve_approved_pair(self.job, self.execution, self.pin,
+                                     self.secret, opener=open_pair)
+        self.assertEqual(pair["suite"], self.bytes)
+        self.assertEqual(pair["artifact"], artifact)
+        self.assertEqual(pair["artifact_sha256"], artifact_pin)
+        self.assertEqual(len(seen), 2)
+        self.assertIn("/suite/", seen[0])
+        self.assertIn("/artifact/", seen[1])
+
+    def test_approved_pair_denies_missing_artifact_pin(self):
+        def suite_without_artifact_pin(request, timeout):
+            body = {"ok": True, "job_id": self.job,
+                    "execution_id": self.execution,
+                    "suite_sha256": self.pin,
+                    "suite_base64": base64.b64encode(self.bytes).decode()}
+            return FakeResponse(request.full_url, json.dumps(body).encode())
+        with self.assertRaisesRegex(ValueError, "artifact pin"):
+            retrieve_approved_pair(self.job, self.execution, self.pin,
+                                   self.secret, opener=suite_without_artifact_pin)
 
     def test_redirect_rejected(self):
         def redirected(request, timeout):
