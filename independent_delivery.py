@@ -78,3 +78,15 @@ def retrieve(kind, job_id, execution_id, sha256, secret, *, opener=None, include
             raise ValueError("receipt artifact pin missing or invalid")
         return payload, artifact_pin
     return payload
+
+
+def retrieve_approved_pair(job_id, execution_id, suite_sha256, secret, *, opener=None):
+    """Fetch receipt-bound suite and artifact; no execution or attestation."""
+    suite, artifact_pin = retrieve(
+        "suite", job_id, execution_id, suite_sha256, secret,
+        opener=opener, include_artifact_pin=True)
+    artifact = retrieve(
+        "artifact", job_id, execution_id, artifact_pin, secret,
+        opener=opener)
+    return {"suite": suite, "artifact": artifact,
+            "suite_sha256": suite_sha256, "artifact_sha256": artifact_pin}
