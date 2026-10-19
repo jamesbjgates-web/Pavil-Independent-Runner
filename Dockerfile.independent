@@ -1,0 +1,5 @@
+FROM php:8.3-cli-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends python3 && rm -rf /var/lib/apt/lists/*
+WORKDIR /runner
+COPY isolated_php_executor.py report_coverage.py runner_contract.py sandbox_entry.py /runner/
+USER 65534:65534
