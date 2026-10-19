@@ -35,6 +35,11 @@ def signed_get_headers(path, secret, execution_id, sha256, *, now=None, nonce=No
             "X-Pavil-Content-Sha256": sha256}
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, msg, headers, newurl):
+        return None
+
+
 def retrieve(kind, job_id, execution_id, sha256, secret, *, opener=None):
     if kind not in ("suite", "artifact") or not isinstance(job_id, str) or not _HEX32.fullmatch(job_id):
         raise ValueError("invalid delivery selector")
@@ -42,7 +47,7 @@ def retrieve(kind, job_id, execution_id, sha256, secret, *, opener=None):
     request = urllib.request.Request(_ROOT + path,
         headers=signed_get_headers(path, secret, execution_id, sha256),
         method="GET")
-    transport = urllib.request.urlopen if opener is None else opener
+    transport = urllib.request.build_opener(_NoRedirect).open if opener is None else opener
     try:
         with transport(request, timeout=30) as response:
             if response.geturl() != _ROOT + path:
