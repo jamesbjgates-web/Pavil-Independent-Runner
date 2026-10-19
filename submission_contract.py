@@ -45,7 +45,10 @@ def build_submission(job_id, execution_id, manifest_pin, suite_pin,
         "issued_epoch": int(time.time()),
         "nonce": secrets.token_hex(16),
     }
-    # Controller submission requires this additional execution binding.\n    # The signed report digest commits to the same execution ID.\n    evidence["execution_id"] = execution_id\n    evidence["hmac_sha256"] = sign_evidence(evidence, evidence_key)
+    # Controller submission requires this additional execution binding.
+    # The signed report digest commits to the same execution ID.
+    evidence["execution_id"] = execution_id
+    evidence["hmac_sha256"] = sign_evidence(evidence, evidence_key)
     request = {
         "job_id": job_id,
         "execution_id": execution_id,
