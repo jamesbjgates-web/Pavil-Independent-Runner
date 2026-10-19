@@ -43,25 +43,11 @@ jobs:
       - name: Validate immutable dispatch metadata
         run: |
           python3 -I -c 'import os,sys;sys.path.insert(0,os.getcwd());from dispatch_contract import validate_dispatch;validate_dispatch(os.environ["JOB_ID"],os.environ["EXECUTION_ID"],os.environ["MANIFEST_SHA256"],os.environ["SUITE_SHA256"])'
-      - name: Retrieve pinned Dell result and approved suite
+      - name: Build isolated PHP verifier
+        run: docker build --file Dockerfile.independent --tag pavil-php-verifier:local .
+      - name: Independently execute approved suite and submit signed evidence
         env:
           PAVIL_DELIVERY_SECRET: ${{ secrets.PAVIL_DELIVERY_SECRET }}
-        run: |
-          python3 -I - <<'PY'
-          import os, sys, hashlib
-          sys.path.insert(0, os.getcwd())
-          from independent_delivery import retrieve_approved_pair
-          from report_coverage import approved_names
-          key = os.environ.get("PAVIL_DELIVERY_SECRET", "").encode()
-          if len(key) < 32:
-              raise SystemExit("INDEPENDENT_DELIVERY_SECRET_NOT_CONFIGURED")
-          pair = retrieve_approved_pair(os.environ["JOB_ID"], os.environ["EXECUTION_ID"],
-                                       os.environ["SUITE_SHA256"], key)
-          print("PINNED_DELIVERY_OK", "artifact_sha256=" + pair["artifact_sha256"])
-          try:
-              names = approved_names(pair["suite"])
-          except (ValueError, TypeError) as exc:
-              raise SystemExit("APPROVED_SUITE_NOT_EXECUTABLE_CONTRACT: " + str(exc))
-          print("APPROVED_TEST_CASES", len(names))
-          raise SystemExit("INDEPENDENT_EXECUTOR_NOT_COMMISSIONED: no tests run, no attestation")
-          PY
+          PAVIL_EVIDENCE_SECRET: ${{ secrets.PAVIL_EVIDENCE_SECRET }}
+          PAVIL_TRANSPORT_SECRET: ${{ secrets.PAVIL_TRANSPORT_SECRET }}
+        run: python3 -I independent_gate.py
