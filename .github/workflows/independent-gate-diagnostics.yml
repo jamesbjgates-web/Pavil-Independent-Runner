@@ -1,0 +1,26 @@
+name: Independent Gate Diagnostic Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - independent_gate.py
+      - tests/test_independent_gate_diagnostics.py
+      - .github/workflows/independent-gate-diagnostics.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compile verifier and diagnostics
+        run: python3 -m py_compile independent_gate.py tests/test_independent_gate_diagnostics.py
+      - name: Execute offline fail-closed diagnostic tests
+        run: python3 -m unittest discover -s tests -p test_independent_gate_diagnostics.py -v
