@@ -48,6 +48,30 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(retrieve("suite", self.job, self.execution,
                                   self.pin, self.secret, opener=open_ok), self.bytes)
 
+    def test_suite_provides_receipt_bound_artifact_pin(self):
+        artifact_pin = "d" * 64
+        body = json.dumps({"ok": True, "job_id": self.job,
+                           "execution_id": self.execution,
+                           "suite_sha256": self.pin,
+                           "artifact_sha256": artifact_pin,
+                           "suite_base64": base64.b64encode(self.bytes).decode()}).encode()
+        def open_ok(request, timeout):
+            return FakeResponse(request.full_url, body)
+        self.assertEqual(retrieve("suite", self.job, self.execution, self.pin,
+                                  self.secret, opener=open_ok, include_artifact_pin=True),
+                         (self.bytes, artifact_pin))
+
+    def test_missing_artifact_pin_fails_closed(self):
+        body = json.dumps({"ok": True, "job_id": self.job,
+                           "execution_id": self.execution,
+                           "suite_sha256": self.pin,
+                           "suite_base64": base64.b64encode(self.bytes).decode()}).encode()
+        def open_ok(request, timeout):
+            return FakeResponse(request.full_url, body)
+        with self.assertRaisesRegex(ValueError, "artifact pin"):
+            retrieve("suite", self.job, self.execution, self.pin,
+                     self.secret, opener=open_ok, include_artifact_pin=True)
+
     def test_redirect_rejected(self):
         def redirected(request, timeout):
             return FakeResponse("https://elsewhere.invalid/", b"{}")
