@@ -1,5 +1,5 @@
 """Historical suite execution inside networkless, credential-free Docker."""
-import hashlib, json
+import hashlib, json, sys
 from pathlib import Path
 from isolated_php_executor import execute
 from historical_recovery_contract import HISTORICAL_JOB, HISTORICAL_SUITE, HISTORICAL_ARTIFACT
@@ -9,7 +9,15 @@ if hashlib.sha256(artifact).hexdigest()!=HISTORICAL_ARTIFACT or hashlib.sha256(s
     raise ValueError("immutable inputs changed")
 # The executor's temporary execution ID is a local sandbox test-run identifier,
 # not an original Dell execution ID; it is deliberately excluded from the report.
-local=execute(HISTORICAL_JOB,"0"*32,HISTORICAL_SUITE,artifact,suite)
+try:
+    local=execute(HISTORICAL_JOB,"0"*32,HISTORICAL_SUITE,artifact,suite)
+except ValueError as exc:
+    value=str(exc)
+    if value.startswith("APPROVED_PHP_SUITE_FAILED:"):
+        reason=value.split(":",1)[1]
+        if reason in ("PHP_PERMISSION_DENIED","PHP_PARSE_ERROR","PHP_FATAL_ERROR","PHP_MISSING_FILE","PHP_ASSERTION_FAILED","PHP_NONZERO_EXIT"):
+            print("HISTORICAL_PHP_DIAGNOSTIC:"+reason,file=sys.stderr)
+    raise ValueError("APPROVED_PHP_SUITE_FAILED") from None
 data=json.loads(local)
 data.pop("execution_id",None)
 data["recovery_kind"]="historical_provenance_v1"
