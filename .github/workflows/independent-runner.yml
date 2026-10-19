@@ -1,6 +1,12 @@
 name: Independent Runner Preflight
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '*.py'
+      - 'tests/**'
+      - '.github/workflows/independent-runner.yml'
   workflow_dispatch:
 
 permissions:
