@@ -39,7 +39,11 @@ def main():
             print("HISTORICAL_DOCKER_EXIT:",result.returncode,flush=True)
             diagnostic=(result.stderr or b"").decode("utf-8","replace")
             for line in diagnostic.splitlines():
-                if "PermissionError" in line or "Permission denied" in line:
+                if "HISTORICAL_PHP_DIAGNOSTIC:" in line:
+                    classification=line.split("HISTORICAL_PHP_DIAGNOSTIC:",1)[1].strip()
+                    if classification in ("PHP_PERMISSION_DENIED","PHP_PARSE_ERROR","PHP_FATAL_ERROR","PHP_MISSING_FILE","PHP_ASSERTION_FAILED","PHP_NONZERO_EXIT"):
+                        print("HISTORICAL_DOCKER_DIAGNOSTIC:",classification,flush=True)
+                elif "PermissionError" in line or "Permission denied" in line:
                     print("HISTORICAL_DOCKER_DIAGNOSTIC: PERMISSION_DENIED",flush=True)
                 elif "APPROVED_PHP_SUITE_FAILED" in line:
                     print("HISTORICAL_DOCKER_DIAGNOSTIC: PHP_SUITE_FAILED",flush=True)
