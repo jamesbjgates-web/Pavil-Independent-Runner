@@ -21,6 +21,19 @@ def build_submission(job_id, execution_id, manifest_pin, suite_pin,
             data.get("artifact_sha256") != digest(artifact) or
             data.get("status") != "PASSED"):
         raise ValueError("test report binding failed")
+    tests = data.get("tests")
+    if not isinstance(tests, list) or not 1 <= len(tests) <= 500:
+        raise ValueError("test coverage unavailable")
+    seen = set()
+    for case in tests:
+        if not isinstance(case, dict):
+            raise ValueError("invalid test case")
+        name = case.get("name")
+        if not isinstance(name, str) or not name or name in seen:
+            raise ValueError("duplicate or unnamed test case")
+        if case.get("status") != "PASSED":
+            raise ValueError("test case not passed")
+        seen.add(name)
     evidence = {
         "verifier": "controller-independent-runner",
         "job_id": job_id,
