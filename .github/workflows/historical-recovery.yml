@@ -1,0 +1,25 @@
+name: Pavil Historical Recovery Verification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pavil-historical-single-job
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Local regression tests
+        run: python3 -I -m unittest discover -s tests -v
+      - name: Build isolated PHP runner
+        run: docker build --file Dockerfile.independent --tag pavil-php-verifier:local .
+      - name: Retrieve pinned artifact and suite, run isolation, submit signed recovery evidence
+        env:
+          PAVIL_TRANSPORT_SECRET: ${{ secrets.PAVIL_TRANSPORT_SECRET }}
+          PAVIL_EVIDENCE_SECRET: ${{ secrets.PAVIL_EVIDENCE_SECRET }}
+        run: python3 historical_gate.py
