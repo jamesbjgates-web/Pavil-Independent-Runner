@@ -38,6 +38,24 @@ class SubmissionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.submit(report(status="FAILED"))
 
+    def test_missing_test_results_denied(self):
+        data = json.loads(report())
+        del data["tests"]
+        with self.assertRaises(ValueError):
+            self.submit(json.dumps(data).encode())
+
+    def test_failed_test_case_denied(self):
+        data = json.loads(report())
+        data["tests"][0]["status"] = "FAILED"
+        with self.assertRaises(ValueError):
+            self.submit(json.dumps(data).encode())
+
+    def test_duplicate_test_case_denied(self):
+        data = json.loads(report())
+        data["tests"].append(dict(data["tests"][0]))
+        with self.assertRaises(ValueError):
+            self.submit(json.dumps(data).encode())
+
     def test_wrong_execution_denied(self):
         with self.assertRaises(ValueError):
             self.submit(report(execution="e" * 32))
