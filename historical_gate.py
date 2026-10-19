@@ -1,5 +1,5 @@
 """Explicitly dispatched single-job historical recovery. Never marks release eligible."""
-import base64, json, os, subprocess, sys, tempfile, urllib.request
+import base64, json, os, subprocess, sys, tempfile, urllib.request, urllib.error
 from pathlib import Path
 from historical_delivery import fetch, headers, ROOT, NoRedirect
 from historical_recovery_contract import HISTORICAL_JOB, sign_verified_historical
@@ -51,6 +51,9 @@ def main():
 
 if __name__=="__main__":
     try:main()
+    except urllib.error.HTTPError as exc:
+        print("HISTORICAL_GATE_HTTP_FAILED:",exc.code,"endpoint:",exc.url.split("/v1/")[-1].split("?")[0],file=sys.stderr)
+        raise SystemExit(1)
     except Exception as exc:
         print("HISTORICAL_GATE_FAILED:",type(exc).__name__,file=sys.stderr)
         raise SystemExit(1)
