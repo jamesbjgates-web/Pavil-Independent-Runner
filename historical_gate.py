@@ -52,7 +52,15 @@ def main():
 if __name__=="__main__":
     try:main()
     except urllib.error.HTTPError as exc:
-        print("HISTORICAL_GATE_HTTP_FAILED:",exc.code,"endpoint:",exc.url.split("/v1/")[-1].split("?")[0],file=sys.stderr)
+        reason="UNAVAILABLE"
+        try:
+            response=json.loads(exc.read(4096))
+            candidate=response.get("reason","")
+            if isinstance(candidate,str) and candidate.isupper() and len(candidate)<100 and all(ch.isupper() or ch.isdigit() or ch=="_" for ch in candidate):
+                reason=candidate
+        except (ValueError,UnicodeDecodeError,TypeError):
+            pass
+        print("HISTORICAL_GATE_HTTP_FAILED:",exc.code,"reason:",reason,"endpoint:",exc.url.split("/v1/")[-1].split("?")[0],file=sys.stderr)
         raise SystemExit(1)
     except Exception as exc:
         print("HISTORICAL_GATE_FAILED:",type(exc).__name__,file=sys.stderr)
