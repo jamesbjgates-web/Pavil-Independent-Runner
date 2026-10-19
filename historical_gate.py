@@ -41,7 +41,7 @@ def main():
             for line in diagnostic.splitlines():
                 if "HISTORICAL_PHP_DIAGNOSTIC:" in line:
                     classification=line.split("HISTORICAL_PHP_DIAGNOSTIC:",1)[1].strip()
-                    if classification in ("PHP_PERMISSION_DENIED","PHP_PARSE_ERROR","PHP_FATAL_ERROR","PHP_MISSING_FILE","PHP_ASSERTION_FAILED","PHP_NONZERO_EXIT"):
+                    if classification in ("PHP_PERMISSION_DENIED","PHP_PARSE_ERROR","PHP_FATAL_ERROR","PHP_MISSING_FILE","PHP_ASSERTION_FAILED","PHP_NONZERO_EXIT","PHP_FATAL_INCLUDE","PHP_FATAL_UNDEFINED_FUNCTION","PHP_FATAL_UNDEFINED_CONSTANT","PHP_FATAL_METHOD_CALL","PHP_FATAL_REDECLARATION","PHP_FATAL_ASSERTION","PHP_FATAL_FILE_ACCESS","PHP_FATAL_OTHER"):
                         print("HISTORICAL_DOCKER_DIAGNOSTIC:",classification,flush=True)
                 elif "PermissionError" in line or "Permission denied" in line:
                     print("HISTORICAL_DOCKER_DIAGNOSTIC: PERMISSION_DENIED",flush=True)
