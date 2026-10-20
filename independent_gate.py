@@ -80,7 +80,18 @@ def guarded(stage, fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
     except Exception as exc:
-        raise GateFailure(stage, type(exc).__name__) from None
+        # Emit only fixed, non-sensitive delivery categories; never log secrets or response bodies.
+        code = type(exc).__name__
+        if stage == "CONFIDENTIAL_DELIVERY" and isinstance(exc, ValueError):
+            message = str(exc)
+            if message.startswith("delivery denied (HTTP ") and message.endswith(")"):
+                status = message[len("delivery denied (HTTP "):-1]
+                if status in ("400", "401", "403", "404", "409", "429", "500", "502", "503", "504"):
+                    code = "HTTP_" + status
+            else:
+                known = {"delivery redirect denied": "REDIRECT_DENIED", "delivery response oversized": "RESPONSE_OVERSIZED", "delivery unavailable": "DELIVERY_UNAVAILABLE", "delivery identity mismatch": "IDENTITY_MISMATCH", "delivery pin mismatch": "PIN_MISMATCH", "delivery bytes missing": "BYTES_MISSING", "delivery checksum mismatch": "CHECKSUM_MISMATCH", "receipt artifact pin missing or invalid": "ARTIFACT_PIN_INVALID"}
+                code = known.get(message, "VALUE_INVALID")
+        raise GateFailure(stage, code) from None
 
 
 if __name__ == "__main__":
