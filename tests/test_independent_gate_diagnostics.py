@@ -17,7 +17,7 @@ class GateDiagnosticsTests(unittest.TestCase):
         with self.assertRaises(gate.GateFailure) as ctx:
             gate.guarded("CONFIDENTIAL_DELIVERY", denied)
         self.assertEqual(ctx.exception.stage, "CONFIDENTIAL_DELIVERY")
-        self.assertEqual(ctx.exception.code, "ValueError")
+        self.assertEqual(ctx.exception.code, "VALUE_INVALID")
         self.assertNotIn("secret material", str(ctx.exception))
 
     def test_missing_inputs_fail_closed(self):
@@ -49,7 +49,7 @@ class GateDiagnosticsTests(unittest.TestCase):
                 with self.assertRaises(gate.GateFailure) as ctx:
                     gate.main()
         self.assertEqual((ctx.exception.stage, ctx.exception.code),
-                         ("CONFIDENTIAL_DELIVERY", "ValueError"))
+                         ("CONFIDENTIAL_DELIVERY", "VALUE_INVALID"))
         self.assertNotIn("private body", str(ctx.exception))
 
 
