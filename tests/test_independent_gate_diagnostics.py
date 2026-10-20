@@ -20,6 +20,21 @@ class GateDiagnosticsTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, "VALUE_INVALID")
         self.assertNotIn("secret material", str(ctx.exception))
 
+    def test_delivery_http_denial_reports_safe_status(self):
+        def denied(*args):
+            raise ValueError("delivery denied (HTTP 404)")
+        with self.assertRaises(gate.GateFailure) as ctx:
+            gate.guarded("CONFIDENTIAL_DELIVERY", denied)
+        self.assertEqual((ctx.exception.stage, ctx.exception.code),
+                         ("CONFIDENTIAL_DELIVERY", "HTTP_404"))
+
+    def test_delivery_checksum_mismatch_reports_safe_code(self):
+        def denied(*args):
+            raise ValueError("delivery checksum mismatch")
+        with self.assertRaises(gate.GateFailure) as ctx:
+            gate.guarded("CONFIDENTIAL_DELIVERY", denied)
+        self.assertEqual(ctx.exception.code, "CHECKSUM_MISMATCH")
+
     def test_missing_inputs_fail_closed(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(ValueError):
