@@ -1,0 +1,35 @@
+name: Candidate verification synthetic preflight
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated synthetic candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import ast, hashlib, json, pathlib, tempfile, unittest
+          with tempfile.TemporaryDirectory() as d:
+              root = pathlib.Path(d)
+              source = "def add(a, b):\n    return a + b\n"
+              expected = hashlib.sha256(source.encode()).hexdigest()
+              file = root / "synthetic.py"
+              file.write_text(source, encoding="utf-8")
+              assert hashlib.sha256(file.read_bytes()).hexdigest() == expected
+              ast.parse(file.read_text(encoding="utf-8"))
+              class SyntheticTest(unittest.TestCase):
+                  def test_add(self):
+                      ns = {}
+                      exec(compile(source, "<synthetic>", "exec"), ns)
+                      self.assertEqual(ns["add"](2, 3), 5)
+              result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(SyntheticTest))
+              if not result.wasSuccessful():
+                  raise SystemExit(1)
+              print(json.dumps({"status":"synthetic_pass","real_candidate_verified":False}))
+          PY
